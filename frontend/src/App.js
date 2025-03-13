@@ -6,8 +6,9 @@ function App() {
     const [studentId, setStudentId] = useState("");
     const [upiLink, setUpiLink] = useState("");
     const [loading, setLoading] = useState(false);
+    const [studentData, setStudentData] = useState(null);
 
-    // Fetch UPI Payment Link from Backend
+    // Fetch UPI Payment Link and Student Details
     const generateQr = async () => {
         try {
             setLoading(true);
@@ -16,6 +17,12 @@ function App() {
 
             if (response.data.success) {
                 setUpiLink(response.data.upiLink);
+                setStudentData({
+                    name: response.data.name,
+                    image: response.data.image,
+                    amountRequired: response.data.amountRequired,
+                    description: response.data.description
+                });
             } else {
                 alert("Failed to generate QR: " + response.data.error);
             }
@@ -24,6 +31,23 @@ function App() {
             alert("Error generating QR. Check console for details.");
         } finally {
             setLoading(false);
+        }
+    };
+
+    // Share UPI Link
+    const shareLink = async () => {
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: "Support This Student",
+                    text: `Help ${studentData.name} by donating here:`,
+                    url: upiLink
+                });
+            } catch (error) {
+                console.error("Error sharing:", error);
+            }
+        } else {
+            alert("Sharing not supported in this browser.");
         }
     };
 
@@ -55,7 +79,7 @@ function App() {
             </button>
 
             {/* Donation Section */}
-            {upiLink && (
+            {upiLink && studentData && (
                 <div style={{
                     marginTop: "20px",
                     padding: "20px",
@@ -66,13 +90,14 @@ function App() {
                 }}>
                     <h2>Support This Student</h2>
                     <img 
-                        src="https://via.placeholder.com/150" 
-                        alt="Student Image"
+                        src={studentData.image} 
+                        alt="Student"
                         style={{ borderRadius: "10px", width: "100%", marginBottom: "10px" }} 
                     />
-                    <p><strong>Student Name:</strong> Student {studentId || "XYZ"}</p>
-                    <p><strong>Required Amount:</strong> ₹5,000</p>
-                    
+                    <p><strong>Student Name:</strong> {studentData.name}</p>
+                    <p><strong>Required Amount:</strong> ₹{studentData.amountRequired}</p>
+                    <p><strong>Description:</strong> {studentData.description}</p>
+
                     {/* Pay Now Button (Only for Mobile) */}
                     <p><strong>📱 Mobile Users:</strong></p>
                     <a href={upiLink} target="_blank" rel="noopener noreferrer">
@@ -112,6 +137,23 @@ function App() {
                     {/* QR Code */}
                     <h3>Or Scan QR to Donate</h3>
                     <QRCodeCanvas value={upiLink} size={200} />
+
+                    {/* Share Button */}
+                    <button 
+                        onClick={shareLink}
+                        style={{
+                            marginTop: "10px",
+                            padding: "10px",
+                            backgroundColor: "#ff5722",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "5px",
+                            cursor: "pointer",
+                            width: "100%"
+                        }}
+                    >
+                        Share QR/Link
+                    </button>
                 </div>
             )}
         </div>
